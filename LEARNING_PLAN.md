@@ -207,4 +207,4 @@ Ideas, roughly from easiest to hardest:
 | 2026-10-05 | 0 | Lesson 4 A–C done: openssh-server in VM, key login works via 1Password key `honeypot-lab` (Host alias `honeypot-lab` with IdentitiesOnly, ssh-copy-id -f). Next: part D (disable password auth). |
 | 2026-10-05 | 0 | ✅ Phase 0 complete. Password auth disabled in VM (`PasswordAuthentication no`), verified with `-o PubkeyAuthentication=no` → `Permission denied (publickey)`. Next: Phase 1 (Python). |
 | 2026-10-05 | 1 | Decision: write code on laptop (Python 3.14, VS Code), repo will become public on GitHub. VM pulls code via git later. |
-| 2026-10-05 | 1 | Lesson 0: git repo, .venv, hello.py, first commit done. Open fixes: empty .gitignore, .claude/ state files committed, work email in commit author. |
+| 2026-10-05 | 1 | Lesson 0: git repo, .venv, hello.py, first commit done. Fixed: .gitignore, .claude/ state untracked, commit amended with GitHub noreply email, force-pushed to DotCoyote/ssh-honeypot. Next: lesson 1 (variables, types, strings). |
