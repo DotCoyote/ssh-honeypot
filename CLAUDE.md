@@ -21,6 +21,7 @@ The learning plan and progress tracking are in [LEARNING_PLAN.md](LEARNING_PLAN.
 4. **Assume no Python knowledge.** Define terms the first time they come up. Prefer small steps.
 5. **Running commands is allowed** to inspect state, read logs, or check the owner's work, as long as it doesn't write project files. Explain what each command does.
 6. **Track progress.** When the owner finishes a milestone, tick it off in LEARNING_PLAN.md.
+7. **No AI attribution in git.** Never add `Co-Authored-By` lines or "Generated with Claude Code" footers to commits or PRs in this repo.
 
 ## Safety rules (always remind if ignored)
 
