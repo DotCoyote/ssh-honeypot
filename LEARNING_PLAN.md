@@ -209,3 +209,4 @@ Ideas, roughly from easiest to hardest:
 | 2026-10-05 | 1 | Decision: write code on laptop (Python 3.14, VS Code), repo will become public on GitHub. VM pulls code via git later. |
 | 2026-10-05 | 1 | Lesson 0: git repo, .venv, hello.py, first commit done. Fixed: .gitignore, .claude/ state untracked, commit amended with GitHub noreply email, force-pushed to DotCoyote/ssh-honeypot. Next: lesson 1 (variables, types, strings). |
 | 2026-10-05 | 1 | Lessons 1 + 2 done (types, f-strings, conversions, TypeError/ValueError; lists, dicts, for/if, .get() default, counting with a dict). Open nits: unneeded parens in if, .get() vs [] for required keys, src_port vs dst_port. Next: lesson 3 (functions). |
+| 2026-10-05 | 1 | Lesson 3 (functions) done: def, return vs print, defaults, docstrings, scope, None. Skipped: min_length=10 call, dst_port in test data, explaining the list comprehension in filter_events (revisit when it comes up). Next: lesson 4 (files, with, json). |
