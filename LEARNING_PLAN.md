@@ -51,7 +51,7 @@ Exercises (you write all of them):
 
 Done when:
 - [x] I can write a script that reads a file line by line and parses JSON
-- [ ] I understand dicts well enough to pull out nested values
+- [x] I understand dicts well enough to pull out nested values
 - [ ] I can read a short class definition and say what it does
 
 Resources: [Official Python Tutorial](https://docs.python.org/3/tutorial/), [Automate the Boring Stuff (free)](https://automatetheboringstuff.com/)
@@ -211,3 +211,4 @@ Ideas, roughly from easiest to hardest:
 | 2026-10-05 | 1 | Lessons 1 + 2 done (types, f-strings, conversions, TypeError/ValueError; lists, dicts, for/if, .get() default, counting with a dict). Open nits: unneeded parens in if, .get() vs [] for required keys, src_port vs dst_port. Next: lesson 3 (functions). |
 | 2026-10-05 | 1 | Lesson 3 (functions) done: def, return vs print, defaults, docstrings, scope, None. Skipped: min_length=10 call, dst_port in test data, explaining the list comprehension in filter_events (revisit when it comes up). Next: lesson 4 (files, with, json). |
 | 2026-10-06 | 1 | Lesson 4 (files, with, encoding, json, JSON Lines) done. Bonus: imports between files, `if __name__ == "__main__"`, __pycache__ ignored, type hints. Comprehensions understood. Next: lesson 5 (nested data). |
+| 2026-10-06 | 1 | Lesson 5 (nested data) done: chained access, safe .get chains, references vs. .copy() vs. copy.deepcopy, any() + generator expressions, group_by_session (dict of lists). Learned real Cowrie session event order. Next: lesson 6 (modules, imports, pip). |
