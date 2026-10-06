@@ -2,3 +2,5 @@
 
 .claude/sessions/*
 .claude/state/*
+
+__pycache__/
