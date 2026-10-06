@@ -1,0 +1,4 @@
+{"eventid": "cowrie.login.failed", "username": "admin", "password": "123456", "src_ip": "1.2.3.4", "src_port": 42716}
+{"eventid": "cowrie.login.failed", "username": "admin1", "password": "78456", "src_ip": "1.2.3.4", "src_port": 42716}
+{"eventid": "cowrie.login.success", "username": "admin2", "password": "237564", "src_ip": "1.2.3.4", "src_port": 42716}
+{"eventid": "cowrie.login.failed", "username": "admin3", "password": "pass", "src_ip": "1.2.3.4", "src_port": 42716}

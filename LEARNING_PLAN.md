@@ -50,7 +50,7 @@ Exercises (you write all of them):
 - Script that reads a file with one JSON object per line and counts how often each value of a field appears
 
 Done when:
-- [ ] I can write a script that reads a file line by line and parses JSON
+- [x] I can write a script that reads a file line by line and parses JSON
 - [ ] I understand dicts well enough to pull out nested values
 - [ ] I can read a short class definition and say what it does
 
@@ -210,3 +210,4 @@ Ideas, roughly from easiest to hardest:
 | 2026-10-05 | 1 | Lesson 0: git repo, .venv, hello.py, first commit done. Fixed: .gitignore, .claude/ state untracked, commit amended with GitHub noreply email, force-pushed to DotCoyote/ssh-honeypot. Next: lesson 1 (variables, types, strings). |
 | 2026-10-05 | 1 | Lessons 1 + 2 done (types, f-strings, conversions, TypeError/ValueError; lists, dicts, for/if, .get() default, counting with a dict). Open nits: unneeded parens in if, .get() vs [] for required keys, src_port vs dst_port. Next: lesson 3 (functions). |
 | 2026-10-05 | 1 | Lesson 3 (functions) done: def, return vs print, defaults, docstrings, scope, None. Skipped: min_length=10 call, dst_port in test data, explaining the list comprehension in filter_events (revisit when it comes up). Next: lesson 4 (files, with, json). |
+| 2026-10-06 | 1 | Lesson 4 (files, with, encoding, json, JSON Lines) done. Bonus: imports between files, `if __name__ == "__main__"`, __pycache__ ignored, type hints. Comprehensions understood. Next: lesson 5 (nested data). |

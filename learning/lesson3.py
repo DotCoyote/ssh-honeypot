@@ -37,14 +37,14 @@ def testfunc():
 def no_return_fn():
     2 + 2
 
-print(no_return_fn()) # None
+if __name__ == "__main__":
+    print(no_return_fn()) # None
 
+    for password in passwords:
+        if is_weak(password):
+            print(f"Password '{password}' is weak.")
 
-for password in passwords:
-    if is_weak(password):
-        print(f"Password '{password}' is weak.")
+    print(count_values(usernames))
 
-print(count_values(usernames))
-
-for event in filter_events(loginattempts, LOGIN_SUCCESS_CODE):
-    print(format_event(event))
+    for event in filter_events(loginattempts, LOGIN_SUCCESS_CODE):
+        print(format_event(event))
