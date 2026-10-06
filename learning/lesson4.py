@@ -1,7 +1,7 @@
 import json
 import os
 
-from lesson3 import filter_events, count_values, LOGIN_SUCCESS_CODE, LOGIN_FAILED_CODE
+from lesson3 import filter_events, count_values, loginattempts, LOGIN_SUCCESS_CODE, LOGIN_FAILED_CODE
 
 passwords_file_name = "passwords.txt"
 data_folder_path = os.path.join(os.path.dirname(__file__), "data")
@@ -24,13 +24,6 @@ passwords = [
 ]
 
 event_dict = dict(eventid=LOGIN_FAILED_CODE, something=True, elsething=None, username='admin', password='123456', src_ip='1.2.3.4', src_port=42716)
-
-loginattempts = []
-loginattempts.append(dict(eventid=LOGIN_FAILED_CODE, username='admin', password='123456', src_ip='1.2.3.4', src_port=42716))
-loginattempts.append(dict(eventid=LOGIN_FAILED_CODE, username='admin1', password='78456', src_ip='1.2.3.4', src_port=42716))
-loginattempts.append(dict(eventid=LOGIN_SUCCESS_CODE, username='admin2', password='237564', src_ip='1.2.3.4', src_port=42716))
-loginattempts.append(dict(eventid=LOGIN_FAILED_CODE, username='admin3', password='pass', src_ip='1.2.3.4', src_port=42716))
-
 
 def is_weak(password, min_length=6):
     'Check if a password is weak (less than specified number of characters)'
@@ -72,28 +65,31 @@ def assemble_passwords_from_logs(events: list):
     'Assemble a list of passwords from login events'
     return [event['password'] for event in events]
 
+if __name__ == "__main__":
+    # Ensure the data folder exists
+    os.makedirs(data_folder_path, exist_ok=True)
 
-# Write each password to the file, one per line
-write_lines_to_file(passwords, passwords_file_path)
+    # Write each password to the file, one per line
+    write_lines_to_file(passwords, passwords_file_path)
 
-passwords = read_lines_from_file(passwords_file_path)
-# Read the passwords from the file and print them
-for password in passwords:
-    if is_weak(password):
-        print(f"Password '{password}' is weak.")
+    passwords = read_lines_from_file(passwords_file_path)
+    # Read the passwords from the file and print them
+    for password in passwords:
+        if is_weak(password):
+            print(f"Password '{password}' is weak.")
 
-print(event_dict)
-jsonstr = json.dumps(event_dict, indent=4)
-print(jsonstr)
+    print(event_dict)
+    jsonstr = json.dumps(event_dict, indent=4)
+    print(jsonstr)
 
-decoded_dict = json.loads(jsonstr)
-print(decoded_dict, type(decoded_dict))
-print(type(json.dumps(event_dict, indent=4)))
+    decoded_dict = json.loads(jsonstr)
+    print(decoded_dict, type(decoded_dict))
+    print(type(json.dumps(event_dict, indent=4)))
 
-write_events_to_file(loginattempts, cowrie_log_file_path)
+    write_events_to_file(loginattempts, cowrie_log_file_path)
 
-read_loginattempts = read_events_from_file(cowrie_log_file_path)
-print_successful_logins(read_loginattempts)
+    read_loginattempts = read_events_from_file(cowrie_log_file_path)
+    print_successful_logins(read_loginattempts)
 
-used_passwords = assemble_passwords_from_logs(read_loginattempts)
-print(count_values(used_passwords))
+    used_passwords = assemble_passwords_from_logs(read_loginattempts)
+    print(count_values(used_passwords))
