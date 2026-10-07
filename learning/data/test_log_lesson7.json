@@ -1,0 +1,10 @@
+{"eventid":"cowrie.login.failed","username":"admin","password":"123456","src_ip":"1.2.3.4","src_port":42716}
+{"eventid":"cowrie.login.success","username":"admin_success","password":"123456","src_ip":"1.2.3.4","src_port":42716}
+{"eventid":"cowrie.login.failed","username":"admin1","password":"78456","src_ip":"1.2.3.4","src_port":42716}
+{"eventid":"cowrie.login.success","username":"admin2","password":"237564","src_ip":"1.2.3.4","src_port":42716}
+{"eventid":"cowrie.login.failed","username":"root","password":"toor","src_ip":"5.6.7.8","src_port":51234
+
+{"eventid":"cowrie.login.failed","username":"guest","password":"guest","src_ip":"9.8.7.6","src_port":39821}
+{"username":"operator","password":"letmein","src_ip":"192.0.2.10","src_port":60123}
+{"eventid":"cowrie.login.success","username":"deploy","password":"secret","src_ip":"10.0.0.5","src_port":22
+{"eventid":"cowrie.login.failed","username":"admin","password":"\u001b[31mdfsf","src_ip":""}
