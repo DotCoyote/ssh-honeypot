@@ -52,7 +52,7 @@ Exercises (you write all of them):
 Done when:
 - [x] I can write a script that reads a file line by line and parses JSON
 - [x] I understand dicts well enough to pull out nested values
-- [ ] I can read a short class definition and say what it does
+- [x] I can read a short class definition and say what it does
 
 Resources: [Official Python Tutorial](https://docs.python.org/3/tutorial/), [Automate the Boring Stuff (free)](https://automatetheboringstuff.com/)
 
@@ -214,3 +214,4 @@ Ideas, roughly from easiest to hardest:
 | 2026-10-06 | 1 | Lesson 5 (nested data) done: chained access, safe .get chains, references vs. .copy() vs. copy.deepcopy, any() + generator expressions, group_by_session (dict of lists). Learned real Cowrie session event order. Next: lesson 6 (modules, imports, pip). |
 | 2026-10-06 | 1 | Lesson 6 (modules, sys.path, __name__, namespace packages, pip, supply-chain checks, requirements.txt with == pins, requests + ip-api.com GeoIP) done. Learned: HTTP 200 != success, no fake defaults (Null Island), translate external schemas at the boundary. Skipped: urllib bonus. Next: lesson 7 (exceptions). |
 | 2026-10-07 | 1 | Lesson 7 (exceptions) done: try/except/else/finally, hierarchy (BaseException vs Exception, bare except blocks Ctrl+C), raise across function boundaries, enumerate line numbers, read → validate pipeline, repr() + truncation against ANSI escape injection (danger is after json.loads). Open: ESC test line in test log not switched to a valid event. Next: lesson 8 (classes). |
+| 2026-10-08 | 1 | Lesson 8 (classes) done: __init__, self, methods vs attributes (bound method bug), __repr__ vs __str__, @classmethod from_dict, inheritance + super(), polymorphism, @dataclass (generated __init__/__repr__/__eq__). Read Cowrie Command_whoami (HoneyPotCommand, call(), self.write, commands dict registry). All Phase 1 checkboxes done; stdlib helpers (Counter, datetime, argparse) not covered yet. |
