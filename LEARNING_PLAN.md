@@ -215,3 +215,55 @@ Ideas, roughly from easiest to hardest:
 | 2026-10-06 | 1 | Lesson 6 (modules, sys.path, __name__, namespace packages, pip, supply-chain checks, requirements.txt with == pins, requests + ip-api.com GeoIP) done. Learned: HTTP 200 != success, no fake defaults (Null Island), translate external schemas at the boundary. Skipped: urllib bonus. Next: lesson 7 (exceptions). |
 | 2026-10-07 | 1 | Lesson 7 (exceptions) done: try/except/else/finally, hierarchy (BaseException vs Exception, bare except blocks Ctrl+C), raise across function boundaries, enumerate line numbers, read → validate pipeline, repr() + truncation against ANSI escape injection (danger is after json.loads). Open: ESC test line in test log not switched to a valid event. Next: lesson 8 (classes). |
 | 2026-10-08 | 1 | Lesson 8 (classes) done: __init__, self, methods vs attributes (bound method bug), __repr__ vs __str__, @classmethod from_dict, inheritance + super(), polymorphism, @dataclass (generated __init__/__repr__/__eq__). Read Cowrie Command_whoami (HoneyPotCommand, call(), self.write, commands dict registry). All Phase 1 checkboxes done; stdlib helpers (Counter, datetime, argparse) not covered yet. |
+| 2026-10-12 | 1 | Lesson 9 (stdlib helpers) in progress: A (synthetic log generator) ✅, B (set) ✅, C (Counter, raw counting + cleanup only at output, tuple pairs, nested unpacking) ✅, D steps 1–2 (fromisoformat, aware UTC, min/max, strftime, divmod) ✅, D step 3c (session_durations dict) ✅. Switched machines here, see Handover. |
+
+---
+
+## Handover (current state, 2026-10-12)
+
+Read this first when resuming on a new machine or in a new session.
+
+### Where we are
+
+Phase 1, **lesson 9 (stdlib helpers)** in `learning/lesson9.py` (committed as work in progress).
+
+| Part | Status |
+|------|--------|
+| A: synthetic log generator (`generate_test_data` → `learning/data/cowrie_test.json`) | ✅ done |
+| B: `set` (unique IPs/sessions, set difference for "only failed" IPs) | ✅ done (list/tuple-in-set experiment skipped, answer was given) |
+| C: `Counter` (top 5 passwords/usernames/pairs) | ✅ done |
+| D step 1–2: parse timestamps, log time range | ✅ done, cleanup open (see below) |
+| D step 3: session durations | ⏳ a–c done (`session_durations` dict, line ~145). **Next: d** longest/shortest via `max`/`min` with `key=` (dict `.get` without `()` or lambda over `.items()`), **then e** average (`sum(..., timedelta())` start-value trap) |
+| D step 4: events per hour (`.hour` + `Counter`, all hours 0–23 incl. zeros, optional `"#" * n` bar chart) | ⏳ open |
+| E: `argparse` (log path positional, `--top N`, `--help`, exit code via `echo $?`) | ⏳ open |
+
+After lesson 9: Phase 1 is complete → **Phase 2 (networking + Wireshark)**.
+
+### Open review points in `lesson9.py` (fix before final lesson-9 commit)
+
+- Line ~145: `dict((k, v) for ...)` works, but rewrite as a real dict comprehension `{k: v for ...}`.
+- Step 2 code: `min(all_times)`/`max(all_times)` computed several times → compute once into variables.
+- `strftime` pattern repeated 3× → module-level constant (also removes nested-quote f-string that needs Python ≥ 3.12).
+- Debug prints to remove: raw lists of top passwords/usernames/pairs, `print(all_times)`, raw `session_durations` dict, standalone min/max/duration prints.
+- Docstrings missing on newer helpers (`parse_timestamp`, `collect_entry_times`, `session_duration`, `get_values_from_entries` …); consider renaming `get_values_from_entries` → `unique_values(entries, field)`.
+- `.idea/` (JetBrains) appeared untracked → add to `.gitignore`.
+
+### Older open items (low priority)
+
+- Lesson 7: ESC test line in `test_log_lesson7.json` never switched to a valid success event (protection verified separately, works).
+- Lesson 3: `format_event` prints attacker fields without `cleanup_text`.
+
+### How the owner likes to work (teaching style)
+
+- Strict CLAUDE.md rules: never write code/config; review with line numbers + hints; owner writes everything.
+- When the owner says **"guide me" / "explain further"**: give a detailed step-by-step guide (sub-steps, tables, what to look up, expected output, plausibility check) — still no code.
+- When the owner says **"done" / "check again"**: read the file, **run it**, verify output (incl. plausibility), then review: ✅ what's right first, then numbered issues with line refs, then small nits.
+- When the owner says **"next" / "let's continue"**: accept skipped items, note them in the log, move on.
+- Recurring principles taught so far (reuse when reviewing): `[]` for required keys / fail loudly; no fake defaults (Null Island); translate at boundaries; clean attacker data only at output (`cleanup_text` = `repr` + truncation); labels must say exactly what's printed; reuse existing helpers instead of rewriting; keep `try` small.
+- Commits: owner uses `/make-commit`; split logically (infra vs. lesson); no scope (no ticket on `main`); **no Co-Authored-By** (CLAUDE.md rule 7).
+
+### Environment on the old machine (not in the repo)
+
+- VirtualBox VM "SSH Honeypot Ubuntu" (Ubuntu Server, 8 GB/2 CPU), NAT + host-only `192.168.56.101`, user `vboxuser`, sshd with password auth disabled, key-only login.
+- SSH: 1Password agent key `honeypot-lab`, `~/.ssh/config` alias `honeypot-lab` (IdentitiesOnly, IdentityFile = public key file).
+- The VM is only needed again from Phase 2/4 on. On a new machine, Python lessons only need: clone repo → `python3 -m venv .venv` → activate → `pip install -r requirements.txt`. Lesson 6 needs internet (ip-api.com).

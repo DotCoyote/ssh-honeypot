@@ -2,7 +2,7 @@
 
 Learning project. The owner is learning Python, Docker, and security tooling by building an SSH/Telnet honeypot that records attacks and shows them in a dashboard.
 
-The learning plan and progress tracking are in [LEARNING_PLAN.md](LEARNING_PLAN.md).
+The learning plan and progress tracking are in [LEARNING_PLAN.md](LEARNING_PLAN.md). **When resuming, read its "Handover" section first**: it has the current lesson, open review points and the owner's preferred teaching style.
 
 ## Stack
 
