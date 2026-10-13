@@ -104,6 +104,17 @@ def calculate_average_session_duration(sessions_durations: dict[str, dt.timedelt
     session_sum = sum(sessions_durations.values(), dt.timedelta())
     return session_sum // len(sessions_durations)
 
+def count_hours_from_entries(entry_times: list[dt.datetime]) -> Counter[int]:
+    "Returns a Counter of hours in UTC, counted by how many times they appear"
+    return Counter(time.hour for time in entry_times)
+
+def generate_full_day_counter(counted_hours: Counter[int]) -> dict[int, int]:
+    "Returns a dict containing all hours (0-23) with num of occurred events"
+    all_hours = {}
+    for hour in range(0, 24):
+        all_hours[dt.time(hour=hour).strftime("%H:%M")] = counted_hours[hour]
+    return all_hours
+
 if __name__ == "__main__":
     test_data = generate_test_data()
 
@@ -147,7 +158,7 @@ if __name__ == "__main__":
 
     print(f"Log covers: {min(all_times).strftime("%d.%m.%Y %H:%M:%S %Z")} -> {max(all_times).strftime("%d.%m.%Y %H:%M:%S %Z")} ({format_duration(duration)})")
 
-    print("#### STEP 3 ####")
+    print("\n#### STEP 3 ####")
     grouped_events = group_events_by_session(events)
     session_durations = {session_id: session_duration(session_events) for session_id, session_events in grouped_events.items()}
 
@@ -157,3 +168,13 @@ if __name__ == "__main__":
     print(f"Longest Session: {cleanup_text(longest_session_id)} ({format_duration(session_durations[longest_session_id])})")
     
     print(f"Average Session: {format_duration(calculate_average_session_duration(session_durations))}")
+
+    print("\n#### Step 4: events per hour ####")
+    print("Events per hour (UTC):")
+    counted_hours = count_hours_from_entries(all_times)
+    formatted_full_day_hours = generate_full_day_counter(counted_hours)
+    highest_count_width = len(str(max(formatted_full_day_hours.values())))
+    for hour, hour_counts in formatted_full_day_hours.items():
+        print(f"{hour:6} {hour_counts:{highest_count_width}} {'#'*hour_counts}")
+
+    assert len(all_times) == counted_hours.total()
