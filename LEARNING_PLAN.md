@@ -216,6 +216,7 @@ Ideas, roughly from easiest to hardest:
 | 2026-10-07 | 1 | Lesson 7 (exceptions) done: try/except/else/finally, hierarchy (BaseException vs Exception, bare except blocks Ctrl+C), raise across function boundaries, enumerate line numbers, read → validate pipeline, repr() + truncation against ANSI escape injection (danger is after json.loads). Open: ESC test line in test log not switched to a valid event. Next: lesson 8 (classes). |
 | 2026-10-08 | 1 | Lesson 8 (classes) done: __init__, self, methods vs attributes (bound method bug), __repr__ vs __str__, @classmethod from_dict, inheritance + super(), polymorphism, @dataclass (generated __init__/__repr__/__eq__). Read Cowrie Command_whoami (HoneyPotCommand, call(), self.write, commands dict registry). All Phase 1 checkboxes done; stdlib helpers (Counter, datetime, argparse) not covered yet. |
 | 2026-10-12 | 1 | Lesson 9 (stdlib helpers) in progress: A (synthetic log generator) ✅, B (set) ✅, C (Counter, raw counting + cleanup only at output, tuple pairs, nested unpacking) ✅, D steps 1–2 (fromisoformat, aware UTC, min/max, strftime, divmod) ✅, D step 3c (session_durations dict) ✅. Switched machines here, see Handover. |
+| 2026-10-13 | 1 | New machine set up: venv from Homebrew `python3.14` (Homebrew's versioned formula has no unversioned `python3` in `bin`; system `/usr/bin/python3` is 3.9 and breaks nested-quote f-strings). D step 3d ✅: `min`/`max` with keyword-only `key=` (positional 2nd arg = compare args themselves), `min(dict)` compares keys alphabetically ("runs ≠ correct"), `.get` vs `[]`/`__getitem__` typing, `timedelta` has no `strftime` → `format_duration` helper. D step 3e ✅: `sum` `start` must be the neutral element (`dt.timedelta()`), not the min (counted twice); function accidentally read the `__main__` global instead of its (typo'd) parameter; `str.join` is called on the separator; return-type hints (`->`, not enforced at runtime). Open: test data regenerates every run (seed / generate only if missing / argparse flag). |
 
 ---
 
@@ -233,7 +234,7 @@ Phase 1, **lesson 9 (stdlib helpers)** in `learning/lesson9.py` (committed as wo
 | B: `set` (unique IPs/sessions, set difference for "only failed" IPs) | ✅ done (list/tuple-in-set experiment skipped, answer was given) |
 | C: `Counter` (top 5 passwords/usernames/pairs) | ✅ done |
 | D step 1–2: parse timestamps, log time range | ✅ done, cleanup open (see below) |
-| D step 3: session durations | ⏳ a–c done (`session_durations` dict, line ~145). **Next: d** longest/shortest via `max`/`min` with `key=` (dict `.get` without `()` or lambda over `.items()`), **then e** average (`sum(..., timedelta())` start-value trap) |
+| D step 3: session durations | ✅ done (`session_durations` dict; shortest/longest via `key=session_durations.__getitem__`, `.get` rejected by Pylance because it may return `None`; `format_duration` helper drops leading zero units; average via `sum(..., dt.timedelta())`). Open nits: drop `get_average_session` wrapper (format at caller), param typo `sessions_durations`, empty dict → `ZeroDivisionError` |
 | D step 4: events per hour (`.hour` + `Counter`, all hours 0–23 incl. zeros, optional `"#" * n` bar chart) | ⏳ open |
 | E: `argparse` (log path positional, `--top N`, `--help`, exit code via `echo $?`) | ⏳ open |
 
