@@ -86,7 +86,23 @@ def session_duration(entries: list):
     session_timestamps = collect_entry_times(entries)
     return max(session_timestamps) - min(session_timestamps)
 
+def format_duration(duration: dt.timedelta):
+    "Transforms a duration timedelta to a time-string"
+    times = []
+    total_seconds = int(duration.total_seconds())
+    hours, leftover_minutes_in_seconds = divmod(total_seconds, 3600)
+    minutes, leftover_seconds = divmod(leftover_minutes_in_seconds, 60)
 
+    if hours > 0: times.append(f"{hours}h")
+    if minutes > 0 or hours > 0: times.append(f"{minutes}m")
+    times.append(f"{leftover_seconds}s")
+
+    return " ".join(times)
+
+def calculate_average_session_duration(sessions_durations: dict[str, dt.timedelta]) -> dt.timedelta:
+    "Calculates the average of a dict with timedeltas"
+    session_sum = sum(sessions_durations.values(), dt.timedelta())
+    return session_sum // len(sessions_durations)
 
 if __name__ == "__main__":
     test_data = generate_test_data()
@@ -127,21 +143,17 @@ if __name__ == "__main__":
     print(parse_timestamp("2026-10-09T00:07:30.570000Z").tzinfo) # UTC
 
     all_times = collect_entry_times(events)
-    print(all_times)
-    print(min(all_times))
-    print(max(all_times))
     duration = max(all_times) - min(all_times)
-    print(duration)
-    print(max(all_times).strftime("%d.%m.%Y %H:%M:%S %Z"))
 
-    duration_seconds = int(duration.total_seconds())
-    duration_hours, duration_leftover_minutes_in_seconds = divmod(duration_seconds, 3600)
-    duration_minutes, duration_leftover_seconds = divmod(duration_leftover_minutes_in_seconds, 60)
-
-    print(f"Log covers: {min(all_times).strftime("%d.%m.%Y %H:%M:%S %Z")} -> {max(all_times).strftime("%d.%m.%Y %H:%M:%S %Z")} ({duration_hours}h {duration_minutes}m)")
+    print(f"Log covers: {min(all_times).strftime("%d.%m.%Y %H:%M:%S %Z")} -> {max(all_times).strftime("%d.%m.%Y %H:%M:%S %Z")} ({format_duration(duration)})")
 
     print("#### STEP 3 ####")
     grouped_events = group_events_by_session(events)
-    session_durations = {(session_id, session_duration(session_events)) for session_id, session_events in grouped_events.items()}
+    session_durations = {session_id: session_duration(session_events) for session_id, session_events in grouped_events.items()}
 
-    print(session_durations)
+    shortest_session_id = min(session_durations, key=session_durations.__getitem__)
+    longest_session_id = max(session_durations, key=session_durations.__getitem__)
+    print(f"Shortest Session: {cleanup_text(shortest_session_id)} ({format_duration(session_durations[shortest_session_id])})")
+    print(f"Longest Session: {cleanup_text(longest_session_id)} ({format_duration(session_durations[longest_session_id])})")
+    
+    print(f"Average Session: {format_duration(calculate_average_session_duration(session_durations))}")
