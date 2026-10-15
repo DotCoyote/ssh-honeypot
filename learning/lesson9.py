@@ -2,14 +2,15 @@ import os
 import random
 from ipaddress import IPv4Address
 import secrets
+import sys
 from lesson3 import LOGIN_FAILED_CODE, LOGIN_SUCCESS_CODE, count_values
 from lesson7 import cleanup_text, read_events
 from lesson5 import group_events_by_session
 import datetime as dt
 from lesson4 import write_events_to_file
 from collections import Counter
+import argparse
 
-test_data_file = os.path.join(os.path.dirname(__file__), 'data', 'cowrie_test.json')
 usernames = ['admin', 'root', 'peter', 'jessica', 'kirk', 'james', 'lars', 'robert']
 passwords = ['test1234', 'password123', 'THIS_IS_SAFE', 'sadf0nds9h234n!', 'super-duper-pass', 'pass_me']
 SUCCESS_RATE = 0.1
@@ -37,13 +38,16 @@ def sort_by_timestamp(elements: list):
 def get_values_from_entries(entries: list, value: str):
     return {entry[value] for entry in entries}
 
-def generate_test_data(entries: int = 200):
-    'Generates a synthetic Cowrie log with $entries and writes it to $test_data_file'
+def generate_test_data(log_path: str, entries: int = 200) -> None:
+    'Generates a synthetic Cowrie log with $entries and writes it to $log_path'
     session_count = entries // 10
     sessions = generate_sessions(session_count)
     data = []
     today = dt.datetime.now(dt.timezone.utc).date()
     midnight = dt.datetime.combine(today, dt.datetime.min.time(), dt.timezone.utc)
+
+    if not log_path.startswith('/'):
+        log_path = os.path.join(os.path.dirname(__file__), log_path)
 
     for session in sessions:
         attempt_count = random.randint(2, 15)
@@ -62,7 +66,7 @@ def generate_test_data(entries: int = 200):
             ))
 
     sorted_data = sort_by_timestamp(data)
-    write_events_to_file(sorted_data, test_data_file)
+    write_events_to_file(sorted_data, log_path)
 
 def get_all_ips(entries: list):
     return get_values_from_entries(entries, 'src_ip')
@@ -99,10 +103,10 @@ def format_duration(duration: dt.timedelta):
 
     return " ".join(times)
 
-def calculate_average_session_duration(sessions_durations: dict[str, dt.timedelta]) -> dt.timedelta:
+def calculate_average_session_duration(session_durations: dict[str, dt.timedelta]) -> dt.timedelta:
     "Calculates the average of a dict with timedeltas"
-    session_sum = sum(sessions_durations.values(), dt.timedelta())
-    return session_sum // len(sessions_durations)
+    session_sum = sum(session_durations.values(), dt.timedelta())
+    return session_sum // len(session_durations)
 
 def count_hours_from_entries(entry_times: list[dt.datetime]) -> Counter[int]:
     "Returns a Counter of hours in UTC, counted by how many times they appear"
@@ -116,10 +120,24 @@ def generate_full_day_counter(counted_hours: Counter[int]) -> dict[int, int]:
     return all_hours
 
 if __name__ == "__main__":
-    test_data = generate_test_data()
+    # Parse Arguments
+    args_parser = argparse.ArgumentParser(description="Test-Data Generator")
+    args_parser.add_argument('logPath', default='data/cowrie_test.json', help="Falls back to data/cowrie_test.json if not provided")
+    args_parser.add_argument('-t', '--top', type=int, default=5, help="How many most common items should be shown. Default: 5")
+    args_parser.add_argument('-g', '--generate', action='store_true', help="Whether or not to generate a testfile. Overwrites existing files.")
+    provided_args = args_parser.parse_args()
+
+    if provided_args.generate is True:
+        print(f"Writing Test File {provided_args.logPath}")
+        test_data = generate_test_data(provided_args.logPath)
 
     # With Set
-    events, error_count, num_empty_lines = read_events(test_data_file)
+    events, error_count, num_empty_lines = read_events(provided_args.logPath)
+
+    if len(events) < 1:
+        print("No events found")
+        sys.exit()
+
     ips = get_all_ips(events)
     sessions = get_values_from_entries(events, 'session')
     print(f"All IPs length: {len(ips)}")
@@ -130,14 +148,14 @@ if __name__ == "__main__":
     print(f"Failed IPs length: {len(ips - successful_ips)}")
 
     counter_passwords = Counter(get_all_as_list(events, "password"))
-    most_common_passwords = counter_passwords.most_common(5)
+    most_common_passwords = counter_passwords.most_common(provided_args.top)
     print(most_common_passwords) # type = list[tuple[str, int]]
     print("Most common passwords:")
     for password, count in most_common_passwords:
         print(f"{cleanup_text(password)} ({count})")
 
     counter_usernames = Counter(get_all_as_list(events, "username"))
-    most_common_usernames = counter_usernames.most_common(5)
+    most_common_usernames = counter_usernames.most_common(provided_args.top)
     print(most_common_usernames) # type = list[tuple[str, int]]
     print("Most common usernames:")
     for username, count in most_common_usernames:
@@ -146,7 +164,7 @@ if __name__ == "__main__":
     print(counter_passwords == count_values(get_all_as_list(events, "password")))
 
     usernames_with_passwords = Counter(build_username_password_pairs(events))
-    most_common_pairs = usernames_with_passwords.most_common(5)
+    most_common_pairs = usernames_with_passwords.most_common(provided_args.top)
     print(most_common_pairs)
     for (username, password), count in most_common_pairs:
         print(f"{cleanup_text(username)}/{cleanup_text(password)}: {count}x")
@@ -166,7 +184,7 @@ if __name__ == "__main__":
     longest_session_id = max(session_durations, key=session_durations.__getitem__)
     print(f"Shortest Session: {cleanup_text(shortest_session_id)} ({format_duration(session_durations[shortest_session_id])})")
     print(f"Longest Session: {cleanup_text(longest_session_id)} ({format_duration(session_durations[longest_session_id])})")
-    
+
     print(f"Average Session: {format_duration(calculate_average_session_duration(session_durations))}")
 
     print("\n#### Step 4: events per hour ####")
