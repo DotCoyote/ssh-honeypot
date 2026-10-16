@@ -4,3 +4,6 @@
 .claude/state/*
 
 __pycache__/
+
+cowrie/logs/
+cowrie/downloads/
