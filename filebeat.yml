@@ -25,3 +25,5 @@ output.elasticsearch:
   # Options are "balanced", "throughput", "scale", "latency" and "custom".
   # Default if unspecified: "custom"
   preset: balanced
+
+  pipeline: geoip

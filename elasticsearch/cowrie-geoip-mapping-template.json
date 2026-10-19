@@ -1,0 +1,30 @@
+{
+  "index_patterns": [
+    "filebeat-9.5.5"
+  ],
+  "template": {
+    "mappings": {
+      "properties": {
+        "cowrie": {
+          "properties": {
+            "geoip": {
+              "properties": {
+                "location": {
+                  "type": "geo_point"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "composed_of": [],
+  "priority": 500,
+  "data_stream": {
+    "hidden": false,
+    "allow_custom_routing": false
+  },
+  "created_date_millis": 1792391694889,
+  "modified_date_millis": 1792391694889
+}

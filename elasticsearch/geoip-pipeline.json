@@ -1,0 +1,13 @@
+{
+  "description": "Add ip geolocation info",
+  "processors": [
+    {
+      "geoip": {
+        "field": "cowrie.src_ip",
+        "target_field": "cowrie.geoip"
+      }
+    }
+  ],
+  "created_date_millis": 1792390656902,
+  "modified_date_millis": 1792390656902
+}
