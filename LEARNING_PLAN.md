@@ -223,42 +223,64 @@ Ideas, roughly from easiest to hardest:
 | 2026-10-16 | 1 | Phase 4 (Cowrie) done. Ran `cowrie/cowrie` via Docker on port 2222; the image ships no shell at all (`sh`/`ls`/`which` all missing), so exploration and `playlog` replay went through the container's own `python3` + `os.walk` instead of `docker exec ... sh`. Found a session's `wget http://example.com` triggered a real `cowrie.session.file_download` — Cowrie actually fetches and saves the real bytes by SHA-256, concretely explaining CLAUDE.md's "never execute downloads/" rule rather than just reciting it. Hit the standard `Host key verification failed` again (3rd different SSH server on `localhost:2222` this week) — same `ssh-keygen -R`/`ssh-exercise` alias fix as phase 2. Pulled `cowrie.cfg.dist`/`userdb.example` out via `docker cp`, edited `hostname` and `userdb.txt` (owner wrote both). Debugged two real bugs from actual container logs: a bind-mounted empty host dir *replaces*, not merges, the image's pre-existing `var/lib/cowrie/tty`+`downloads` subdirs, so sessions crashed with `FileNotFoundError` until those subdirs were `mkdir -p`'d on the host first; and a `*:x:*` catch-all already present in the stock `userdb.example`, sitting *before* the owner's own `paul`/`wpadmin` rules, silently accepted every login regardless of the new rules (first-match-wins applies to the whole file, not just lines you add — same principle as lesson 9's dict ordering bugs, just hitting it in an inherited config file this time). Confirmed fix: `paul`/`password` now fails, `paul`/anything-else succeeds, fake hostname `wordpress` shows in the prompt. `cowrie/logs/` and `cowrie/downloads/` gitignored as generated runtime data; only `cowrie/etc/cowrie.cfg` and `cowrie/etc/userdb.txt` are real config, kept. **Phase 4 complete.** |
 | 2026-10-16 | 2 | Phase 5 (log analysis) done, against the real `cowrie.json` (73+ entries) instead of synthetic test data. Extracted a new top-level `honeypot/` package (`logs.py`, `sanitize.py`, `export.py`) from lesson 7's `read_events`/`cleanup_text`, scoped to only what the script needs now rather than reorganizing all 9 lessons upfront; lessons 1–9 stay frozen as the graded historical record. Confirmed real cowrie.json field names match the lesson-9 synthetic generator exactly, so no new parsing logic was needed, just new `eventid`-prefix filtering (`cowrie.login.`, `cowrie.command.input`). Covered `argparse` gaps lesson 9 didn't hit: a positional with `default=` is still required unless `nargs='?'` is also set; `nargs='?'` + `const=` on an optional flag (`--csv` with no value vs. omitted vs. given a value); typing `parse_args()`'s result via an `argparse.Namespace` subclass with class-level annotations (confirmed via pyright `reveal_type` that it types correctly-spelled fields precisely, but — correcting my own earlier claim — does **not** catch a typo'd attribute name, which still only surfaces as a runtime `AttributeError`, because `Namespace` falls back to `Any` for unknown attributes even on subclasses). Debugged a `--top` value silently ignored on two of four metrics (missing argument at the call site) and a function named `get_top_...` that didn't actually cap anything. `csv.writer`: built one combined summary file (category/value/count) instead of four separate exports, after catching that calling the export function multiple times in `'w'` mode would've silently overwritten all but the last metric. Caught and fixed a real CSV/formula-injection risk (OWASP-documented) by routing exported values through `cleanup_text` before writing — a spreadsheet opening a field starting with `=`/`+`/`-`/`@` can execute it as a formula. Also fixed a `Path(file).mkdir()` bug that created the CSV's target path as a directory instead of a file (needed `.parent.mkdir()`). **Phase 5 complete.** |
 | 2026-10-19 | 1 | Phase 6 (Elasticsearch/Kibana) done, debugged almost entirely from real cluster state rather than guessed config. Elasticsearch 8.x+ security/TLS defaults made a plain `curl` fail silently (`Empty reply from server`, actually a TLS handshake mismatch plus real auth); used `discovery.type=single-node`/`xpack.security.enabled=false` for this localhost-only dev setup. Found a genuine Filebeat/Cowrie field-name collision: Cowrie's own `input` field (command text) collided with Filebeat's own reserved `input.type` metadata, silently losing Cowrie's data at JSON-decode time — not fixable with a later `processors: rename` step (too late in the pipeline), fixed properly by nesting all of Cowrie's fields under a `cowrie.*` prefix (`parsers: - ndjson: target: 'cowrie'`) instead of `keys_under_root`. Each schema change needed a full wipe (`DELETE _data_stream/...` + recreate the filebeat container to reset its position registry) since Elasticsearch field types can't change retroactively and Compose doesn't recreate containers just because a bind-mounted file changed. Built an Elasticsearch `geoip` ingest pipeline for the map panel; discovered local Docker traffic uses a private IP with no geographic data, so injected a handful of clearly-marked demo documents (real public IPs) to prove the panel works, verified against the pipeline via `_ingest/pipeline/.../_simulate` before touching any real data. Introducing a competing index template to fix `cowrie.geoip.location`'s mapping (needed, since nesting under `cowrie.*` also sidestepped Filebeat's own `geoip.location` → `geo_point` convention) had a side effect I under-anticipated: a higher-priority template doesn't merge with a lower one, it fully replaces it — so our own `cowrie.*` fields silently lost Filebeat's keyword-only dynamic mapping too, breaking two already-working dashboard panels (fixed by using `.keyword` suffixes consistently from then on, the pragmatic fix over reworking the template with `composed_of`). Diagnosed a "no data showing" dead end down to a leftover dashboard-level filter pill from map-testing, left filtering out everything real. Separately found the actual `cowrie.json` log file had lost all history from the 16th — gone from the source file itself during the multi-day gap, unrelated to anything done today. Exported the dashboard (`kibana/dashboard-export.ndjson`) and the ingest pipeline + index template (`elasticsearch/*.json`) for reproducibility, same reasoning as the Phase 3 compose files. **Phase 6 complete.** |
+| 2026-10-19 | 7 | Phase 7 started. Oracle Cloud Free Tier ARM instance (A1.Flex, Ubuntu 26.04) running. ELK and Cowrie will run on the same VPS. The VCN had no internet gateway or default route, so `ssh` timed out (silently dropped, not refused). Fixed with an internet gateway plus a `0.0.0.0/0` route. Read-only inspection of sshd (socket-activated, password auth already off) and of Oracle's default iptables (REJECT at the end of INPUT). Checkpoint before moving sshd, see Handover. |
+| 2026-10-23 | 7 | Step 2 done: admin sshd moved to a high port, key-only. Opened it in all three layers (VCN security list for own IP `/32`, iptables inserted before the REJECT and persisted, `ssh.socket` via `daemon-reload` + socket restart), then tested with both ports active before removing 22. Traps hit: the image has no editor; `sshd -T` without `sudo` fails; the ssh alias pointed `IdentityFile` at the `.pub` file. Port 22 is now free for Cowrie. Next: step 3 (firewall). |
+| 2026-10-23 | 7 | Step 3 done: security list opens 22 + 23 to the world, admin port only from own IP. Telnet decided yes. Learned that Docker-published ports go through `FORWARD`, not `INPUT`, so the host INPUT REJECT doesn't protect them, and `127.0.0.1:` bindings in Compose are the real protection for Elasticsearch/Kibana. `rpcbind` stopped + disabled (stop vs. disable), checked TCP and UDP listeners separately. Next: step 4 (Docker + Cowrie on the VPS). |
 
 ---
 
-## Handover (current state, 2026-10-12)
+## Handover (current state, 2026-10-19)
 
 Read this first when resuming on a new machine or in a new session.
 
 ### Where we are
 
-Phase 1, **lesson 9 (stdlib helpers)** in `learning/lesson9.py` (committed as work in progress).
+**Phase 7 (go live safely), step 3 of 7: firewall.** Phases 0–6 are complete and committed. Nothing for Phase 7 is in the repo yet. All work so far is cloud console and VPS state.
 
-| Part | Status |
+The VPS public IP and the admin SSH port are deliberately **not** written here, because this repo is public. They live in the owner's `~/.ssh/config` alias `Oracle-SSH-Honeypot`.
+
+| Step | Status |
 |------|--------|
-| A: synthetic log generator (`generate_test_data` → `learning/data/cowrie_test.json`) | ✅ done |
-| B: `set` (unique IPs/sessions, set difference for "only failed" IPs) | ✅ done (list/tuple-in-set experiment skipped, answer was given) |
-| C: `Counter` (top 5 passwords/usernames/pairs) | ✅ done |
-| D step 1–2: parse timestamps, log time range | ✅ done, cleanup open (see below) |
-| D step 3: session durations | ✅ done (`session_durations` dict; shortest/longest via `key=session_durations.__getitem__`, `.get` rejected by Pylance because it may return `None`; `format_duration` helper drops leading zero units; average via `sum(..., dt.timedelta())`, formatted at the caller). Open nits: param typo `sessions_durations`, empty dict → `ZeroDivisionError` |
-| D step 4: events per hour | ✅ done (`count_hours_from_entries` + `Counter`; `generate_full_day_counter` fills all 24 hours incl. zeros since `range`'s end is exclusive and a missing `Counter` key returns 0; nested f-string field for dynamic column width `{count:{width}}`; `"#" * count` bar chart; `assert len(all_times) == counted_hours.total()` as permanent regression guard) |
-| E: `argparse` | ✅ done (positional `logPath` used for both reading and `--generate`'s target; `--top N` with `type=int` so argparse validates before the code runs; `-g`/`--generate` as `action='store_true'`; missing/invalid args exit non-zero via argparse itself, no manual handling; found and fixed a bug where the parsed path was wired to `generate_test_data` but reading still used the old hardcoded constant; empty-log guard placed right after `read_events`, where the real precondition is, instead of patched at each later crash site) |
+| 1. Rent VPS | ✅ Oracle Cloud Free Tier, `VM.Standard.A1.Flex` (ARM/aarch64), Ubuntu **26.04 LTS**, user `ubuntu`, key-only login works |
+| 2. Move sshd, key-only auth | ✅ admin sshd on a high port only (own drop-in in `sshd_config.d/`), key-only, alias has `Port` set. Opened in all 3 layers: VCN security list (own IP `/32`), iptables (inserted before the REJECT and persisted in `rules.v4`), `ssh.socket` (reloaded via `daemon-reload`) |
+| 3. Firewall (honeypot ports open, admin SSH only from own IP) | ✅ security list: 22 + 23 from `0.0.0.0/0`, admin port from own `/32` only. No INPUT rule for 23 needed (Docker-published ports go through `FORWARD`, not `INPUT`). `rpcbind` (111 TCP/UDP) stopped and disabled. Remaining listeners: only the admin sshd publicly, the rest on localhost/private interface (resolver 53, DHCP 68, chrony 323) |
+| 4. Map public 22 → Cowrie | ⬜ |
+| 5. Restrict Cowrie container's outbound traffic | ⬜ |
+| 6. Kibana on localhost + SSH tunnel | ⬜ |
+| 7. One-hour `tcpdump` capture → Wireshark | ⬜ |
 
-**Lesson 9 complete. Phase 1 fully done.**
+Decisions made:
+- **ELK runs on the same VPS as Cowrie** (24 GB RAM is plenty). Trade-off accepted: a container escape would land on the same host as the log data. Mitigation still to do: put Cowrie on its own Docker network, with no route to Elasticsearch/Kibana.
+- Images must be **arm64**. Check every image before pulling it on the VPS.
 
-After lesson 9: Phase 1 is complete → **Phase 2 (networking + Wireshark)**.
+Debugged so far:
+- Instance creation: the public subnet can't be created from the instance form. Fixed with **Networking → VCN Wizard → "VCN with Internet Connectivity"**.
+- `ssh` timed out (packets dropped, not refused): the VCN had **no internet gateway** and the route table was empty. Fixed with an internet gateway plus route rule `0.0.0.0/0 → Internet Gateway`. Trap: Target Type "Private IP" is wrong, because that's for routing through another instance.
 
-### Open review points in `lesson9.py` (fix before final lesson-9 commit)
+State found on the VPS (read-only checks, nothing changed yet):
+- `sshd -T`: `port 22`, `passwordauthentication no`, `pubkeyauthentication yes`, `permitrootlogin prohibit-password` (could tighten to `no`).
+- sshd is **socket-activated**: `ssh.socket` listens on `0.0.0.0:22` and `[::]:22`. Changing `Port` in the config alone plus `restart ssh` won't move it. Research `sshd-socket-generator`: something needs a reload before the socket restarts.
+- Host firewall `/etc/iptables/rules.v4` (Oracle image default): INPUT allows only ESTABLISHED, ICMP, `lo`, and TCP 22, then **`-j REJECT`**. A new ACCEPT rule must be inserted *before* that REJECT (appending puts it after, so it never matches). It must also be persisted for reboots (`netfilter-persistent`). Check `rules.v6` too.
 
-- Line ~145: `dict((k, v) for ...)` works, but rewrite as a real dict comprehension `{k: v for ...}`.
-- Step 2 code: `min(all_times)`/`max(all_times)` computed several times → compute once into variables.
-- `strftime` pattern repeated 3× → module-level constant (also removes nested-quote f-string that needs Python ≥ 3.12).
-- Debug prints to remove: raw lists of top passwords/usernames/pairs, `print(all_times)`, raw `session_durations` dict, standalone min/max/duration prints.
-- Docstrings missing on newer helpers (`parse_timestamp`, `collect_entry_times`, `session_duration`, `get_values_from_entries` …); consider renaming `get_values_from_entries` → `unique_values(entries, field)`.
-- `.idea/` (JetBrains) appeared untracked → add to `.gitignore`.
+Learned in step 2 (2026-10-23):
+- A single `Port` line disables the default 22. To listen on both during the switch, you need two `Port` lines.
+- The minimal Oracle image has no editor, so `nano` had to be installed.
+- `sshd -T` and `ss -p` need `sudo`. Without it they fail (`no hostkeys available`) or show an empty Process column.
+- The ssh alias first pointed `IdentityFile` at the `.pub` file. That only works with an agent that holds the private key. Oracle's generated key isn't in 1Password, so it has to point at the private key file (`chmod 600`).
+- `nc` result meanings: timeout = a firewall drops the packets, refused = they arrive but nothing listens, succeeded = something listens. Used to check each layer separately.
+
+Learned in step 3 (2026-10-23):
+- Decision: **Telnet too** (port 23, many IoT botnets). It must be enabled in `cowrie.cfg` (off by default).
+- Docker publishes ports via DNAT, so the traffic runs through `FORWARD` (Docker inserts its rules there before Oracle's REJECT), not `INPUT`. Consequence: a port published as plain `-p 9200:9200` is reachable from the internet **despite** INPUT REJECT. The `127.0.0.1:` bindings for Elasticsearch/Kibana are the real protection, so check them before the first `up` on the VPS.
+- `systemctl stop` only ends the current run; `disable` removes the autostart. Without `mask`, another package can still pull rpcbind in as a dependency, and the final `nmap` check would catch that.
+- `ss -tlnp` shows TCP only; UDP needs `ss -ulnp`.
+- From macOS, `nc` can't tell a TCP reset from an ICMP reject (both show "refused"). The iptables packet counters (`-L -v`) show which rule really matched.
+
+**Next: step 4.** Install Docker on the VPS (arm64), get the repo onto the VPS, enable Telnet in `cowrie.cfg`, map public 22 → Cowrie 2222 and 23 → Cowrie's Telnet port. Before the first `up`: check that every Elasticsearch/Kibana port binding has `127.0.0.1:`. Later, watch out for Docker-published ports: they go through the `FORWARD`/`DOCKER` chains, not `INPUT`, so the host's INPUT rules don't cover them.
 
 ### Older open items (low priority)
 
+- `lesson9.py` cleanup nits (dict comprehension, repeated `min`/`max`/`strftime`, debug prints, missing docstrings). Lessons 1–9 are frozen as the historical record, so these are optional.
 - Lesson 7: ESC test line in `test_log_lesson7.json` never switched to a valid success event (protection verified separately, works).
 - Lesson 3: `format_event` prints attacker fields without `cleanup_text`.
 
