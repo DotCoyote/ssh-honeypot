@@ -1,7 +1,5 @@
 {
-  "index_patterns": [
-    "filebeat-9.5.5"
-  ],
+  "index_patterns": ["filebeat-9.5.5"],
   "template": {
     "mappings": {
       "properties": {
@@ -24,7 +22,5 @@
   "data_stream": {
     "hidden": false,
     "allow_custom_routing": false
-  },
-  "created_date_millis": 1792391694889,
-  "modified_date_millis": 1792391694889
+  }
 }
