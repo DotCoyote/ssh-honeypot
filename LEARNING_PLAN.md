@@ -180,7 +180,7 @@ Steps to research and do yourself:
 - Run a `tcpdump` capture for one hour and analyze it in Wireshark
 
 Done when:
-- [ ] Real attacks appear in Kibana (usually within minutes)
+- [x] Real attacks appear in Kibana (usually within minutes)
 - [ ] Kibana and Elasticsearch are not reachable from the internet (check with `nmap` from another machine)
 
 ---
@@ -226,6 +226,7 @@ Ideas, roughly from easiest to hardest:
 | 2026-10-19 | 7 | Phase 7 started. Oracle Cloud Free Tier ARM instance (A1.Flex, Ubuntu 26.04) running. ELK and Cowrie will run on the same VPS. The VCN had no internet gateway or default route, so `ssh` timed out (silently dropped, not refused). Fixed with an internet gateway plus a `0.0.0.0/0` route. Read-only inspection of sshd (socket-activated, password auth already off) and of Oracle's default iptables (REJECT at the end of INPUT). Checkpoint before moving sshd, see Handover. |
 | 2026-10-23 | 7 | Step 2 done: admin sshd moved to a high port, key-only. Opened it in all three layers (VCN security list for own IP `/32`, iptables inserted before the REJECT and persisted, `ssh.socket` via `daemon-reload` + socket restart), then tested with both ports active before removing 22. Traps hit: the image has no editor; `sshd -T` without `sudo` fails; the ssh alias pointed `IdentityFile` at the `.pub` file. Port 22 is now free for Cowrie. Next: step 3 (firewall). |
 | 2026-10-23 | 7 | Step 3 done: security list opens 22 + 23 to the world, admin port only from own IP. Telnet decided yes. Learned that Docker-published ports go through `FORWARD`, not `INPUT`, so the host INPUT REJECT doesn't protect them, and `127.0.0.1:` bindings in Compose are the real protection for Elasticsearch/Kibana. `rpcbind` stopped + disabled (stop vs. disable), checked TCP and UDP listeners separately. Next: step 4 (Docker + Cowrie on the VPS). |
+| 2026-10-26 | 7 | **Honeypot live.** Docker on the VPS, Cowrie on 22/23 in its own network, ELK on a separate network, Kibana only through an SSH tunnel. The first Telnet botnets (e.g. Odesa, `admin/admin`, `enable`/`linuxshell`/`system`) arrived within minutes, with 4431 documents after about an hour. Debugged: `.env` not read (bind on `127.0.0.1`), Filebeat config owner, UID 999 on `cowrie/downloads` (SSH dead, Telnet alive), honeypot host key in `known_hosts`, `*_millis` fields in the exports, a typo'd template name, and the tunnel accidentally landing on the local Kibana. Done-when 1 ✅. Open: outbound restriction, IP isolation test on the VPS, tcpdump, nmap. |
 
 ---
 
@@ -235,7 +236,7 @@ Read this first when resuming on a new machine or in a new session.
 
 ### Where we are
 
-**Phase 7 (go live safely), step 3 of 7: firewall.** Phases 0–6 are complete and committed. Nothing for Phase 7 is in the repo yet. All work so far is cloud console and VPS state.
+**Phase 7 (go live safely): the honeypot is live and collecting real attacks.** Open: steps 5 and 7, the IP-level isolation test on the VPS, and the final `nmap` check (done-when 2). Phases 0–6 are complete and committed.
 
 The VPS public IP and the admin SSH port are deliberately **not** written here, because this repo is public. They live in the owner's `~/.ssh/config` alias `Oracle-SSH-Honeypot`.
 
@@ -244,9 +245,9 @@ The VPS public IP and the admin SSH port are deliberately **not** written here, 
 | 1. Rent VPS | ✅ Oracle Cloud Free Tier, `VM.Standard.A1.Flex` (ARM/aarch64), Ubuntu **26.04 LTS**, user `ubuntu`, key-only login works |
 | 2. Move sshd, key-only auth | ✅ admin sshd on a high port only (own drop-in in `sshd_config.d/`), key-only, alias has `Port` set. Opened in all 3 layers: VCN security list (own IP `/32`), iptables (inserted before the REJECT and persisted in `rules.v4`), `ssh.socket` (reloaded via `daemon-reload`) |
 | 3. Firewall (honeypot ports open, admin SSH only from own IP) | ✅ security list: 22 + 23 from `0.0.0.0/0`, admin port from own `/32` only. No INPUT rule for 23 needed (Docker-published ports go through `FORWARD`, not `INPUT`). `rpcbind` (111 TCP/UDP) stopped and disabled. Remaining listeners: only the admin sshd publicly, the rest on localhost/private interface (resolver 53, DHCP 68, chrony 323) |
-| 4. Map public 22 → Cowrie | ⬜ |
+| 4. Map public 22 → Cowrie | ✅ 22 → 2222 (SSH) and 23 → 2223 (Telnet), bind address via `COWRIE_PUBLIC_IP` (default `127.0.0.1`, `0.0.0.0` only in the VPS `.env`). Cowrie on its own `cowrie-net`, ELK on `elk-net` |
 | 5. Restrict Cowrie container's outbound traffic | ⬜ |
-| 6. Kibana on localhost + SSH tunnel | ⬜ |
+| 6. Kibana on localhost + SSH tunnel | ✅ `ssh -L <local port>:localhost:5601 -N -o ExitOnForwardFailure=yes` through the admin alias. Dashboard imported, real attacks visible |
 | 7. One-hour `tcpdump` capture → Wireshark | ⬜ |
 
 Decisions made:
@@ -276,7 +277,17 @@ Learned in step 3 (2026-10-23):
 - `ss -tlnp` shows TCP only; UDP needs `ss -ulnp`.
 - From macOS, `nc` can't tell a TCP reset from an ICMP reject (both show "refused"). The iptables packet counters (`-L -v`) show which rule really matched.
 
-**Next: step 4.** Install Docker on the VPS (arm64), get the repo onto the VPS, enable Telnet in `cowrie.cfg`, map public 22 → Cowrie 2222 and 23 → Cowrie's Telnet port. Before the first `up`: check that every Elasticsearch/Kibana port binding has `127.0.0.1:`. Later, watch out for Docker-published ports: they go through the `FORWARD`/`DOCKER` chains, not `INPUT`, so the host's INPUT rules don't cover them.
+Learned in steps 4 + 6 (2026-10-26):
+- Docker from Ubuntu's packages (`docker.io` + Compose plugin). The `docker` group is root-equivalent, so keep using `sudo docker`. Never run `netfilter-persistent save` after Docker is installed (it would freeze Docker's chains into `rules.v4`).
+- **Isolation only proven at the name level:** from Cowrie, `elasticsearch` doesn't resolve (`gaierror`), but locally (Docker Desktop) a connection **by IP** across networks worked. **On the VPS (2026-10-27) the IP test times out** (Cowrie → `172.18.0.2:9200`, the IP confirmed by the DNAT rule), so on real Linux Docker separates the networks at the IP level too. The commit `5e0a90f` statement holds on the VPS; the local leak was Docker Desktop-specific.
+- `host_binding_ipv4` as a network option was ignored on Docker Desktop. An explicit IP in the port entry works. On macOS, Docker Desktop binds privileged ports (<1024) as `*:22`, but filters in software (checked from the LAN IP).
+- On real Linux, UIDs matter for bind mounts: Cowrie runs as `999:999`. `cowrie/downloads` **itself** (= `var/lib/cowrie`) also has to belong to 999, or the SSH host key can't be written. Then Telnet runs but SSH doesn't (refused from inside the container, while the DNAT counters still count).
+- Filebeat on Linux only accepts a config owned by root with no group/other write. Downside: `git pull` as `ubuntu` can't overwrite `filebeat.yml` any more.
+- Exports from `GET` contain system-managed fields (`created_date_millis`) that `PUT` rejects. Fixed in the repo (`8116546`). Load the pipeline and template **before** Filebeat's first start, and test with `_simulate` (the GeoLite2 DB downloads itself).
+- Honeypot SSH test via a separate `ssh_config` alias with `StrictHostKeyChecking no` + `UserKnownHostsFile /dev/null` + no agent/pubkey. **Never** in the admin alias.
+- The first tunnel attempt silently failed: the local Kibana held `5601`, so the browser showed the empty local Kibana. Check with `lsof` which process holds the port. `ExitOnForwardFailure=yes` makes ssh fail loudly instead.
+
+**Next: step 5** (restrict Cowrie's outbound traffic), the IP isolation test on the VPS, step 7 (`tcpdump`), then the `nmap` check from outside (done-when 2). Later, watch out for Docker-published ports: they go through the `FORWARD`/`DOCKER` chains, not `INPUT`, so the host's INPUT rules don't cover them.
 
 ### Older open items (low priority)
 
