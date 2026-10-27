@@ -1,5 +1,7 @@
 networks:
   cowrie-net:
+    driver_opts:
+      com.docker.network.bridge.name: 'br-cowrie'
   elk-net:
 
 services:
