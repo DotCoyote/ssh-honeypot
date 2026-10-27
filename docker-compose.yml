@@ -4,6 +4,10 @@ networks:
       com.docker.network.bridge.name: 'br-cowrie'
   elk-net:
 
+volumes:
+  es-vol:
+  fb-vol:
+
 services:
   cowrie:
     networks:
@@ -35,6 +39,8 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
+    volumes:
+      - es-vol:/usr/share/elasticsearch/data
 
   kibana:
     networks:
@@ -53,5 +59,6 @@ services:
     volumes:
       - ./cowrie/logs:/cowrie-logs:ro
       - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - fb-vol:/usr/share/filebeat/data
     depends_on:
       - elasticsearch
